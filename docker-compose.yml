@@ -161,6 +161,25 @@ services:
         - open-terminal
 
   # ===========================================================================
+  # Ollama - Local LLM Runtime
+  # ===========================================================================
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ${COMPOSE_PROJECT_NAME:-openwebui-stack}_ollama
+    restart: unless-stopped
+    logging: *default-logging
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ===========================================================================
   # LiteLLM Proxy - Unified LLM Gateway
   # ===========================================================================
   litellm:
