@@ -101,6 +101,10 @@ services:
       # Disable code execution features
       ENABLE_CODE_EXECUTION: "false"
       ENABLE_CODE_INTERPRETER: "false"
+
+      # Open Terminal integration
+      TERMINAL_SERVER_CONNECTIONS: '[{"id":"open-terminal","url":"http://open-terminal:8000","key":"${OPEN_TERMINAL_API_KEY}","name":"Open Terminal","auth_type":"bearer","config":{"access_grants":[]}}]'
+
     networks:
       - frontend
       - backend
@@ -113,6 +117,8 @@ services:
         condition: service_healthy
       lgtm:
         condition: service_started
+      open-terminal:
+        condition: service_healthy
     extra_hosts:
       - "host.docker.internal:host-gateway"
     labels:
@@ -130,6 +136,29 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+
+  # ===========================================================================
+  # Open Terminal - Computer for LLMs (Optional)
+  # ===========================================================================
+  open-terminal:
+      image: ghcr.io/open-webui/open-terminal
+      container_name: ${COMPOSE_PROJECT_NAME:-openwebui-stack}_open-terminal
+      restart: unless-stopped
+      logging: *default-logging
+      volumes:
+        - open-terminal:/home/user
+      environment:
+        - OPEN_TERMINAL_API_KEY=${OPEN_TERMINAL_API_KEY:?error}
+      networks:
+        - backend
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+        interval: 30s
+        timeout: 10s
+        retries: 3
+        start_period: 30s
+      profiles:
+        - open-terminal
 
   # ===========================================================================
   # LiteLLM Proxy - Unified LLM Gateway
@@ -426,3 +455,5 @@ volumes:
     name: ${COMPOSE_PROJECT_NAME:-openwebui-stack}_lgtm_data
   traefik_logs:
     name: ${COMPOSE_PROJECT_NAME:-openwebui-stack}_traefik_logs
+  open-terminal:
+    name: ${COMPOSE_PROJECT_NAME:-openwebui-stack}_open-terminal
