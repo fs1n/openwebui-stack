@@ -10,46 +10,6 @@ x-logging: &default-logging
 
 services:
   # ===========================================================================
-  # Traefik Reverse Proxy
-  # ===========================================================================
-  traefik:
-    image: traefik:v3.7
-    container_name: ${COMPOSE_PROJECT_NAME:-openwebui-stack}_traefik
-    restart: unless-stopped
-    security_opt:
-      - no-new-privileges:true
-    logging: *default-logging
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
-      - ./traefik/dynamic:/etc/traefik/dynamic:ro
-      - ./certs:/etc/traefik/certs:ro
-      - traefik_logs:/var/log/traefik
-    environment:
-      - TZ=UTC
-    networks:
-      - frontend
-      - backend
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.traefik.rule=Host(`traefik.${DOMAIN:-localhost}`)"
-      - "traefik.http.routers.traefik.entrypoints=websecure"
-      - "traefik.http.routers.traefik.tls=true"
-      - "traefik.http.routers.traefik.service=api@internal"
-      - "traefik.http.routers.traefik.middlewares=dashboard-auth"
-      # Dashboard with basic auth (credentials from environment)
-      - "traefik.http.middlewares.dashboard-auth.basicauth.users=${TRAEFIK_DASHBOARD_USER:-admin}:${TRAEFIK_DASHBOARD_PASSWORD_HASH:?error}"
-    healthcheck:
-      test: [ "CMD", "traefik", "healthcheck", "--ping" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-
-  # ===========================================================================
   # Open WebUI - Main Application Interface
   # ===========================================================================
   open-webui:
@@ -106,7 +66,7 @@ services:
       TERMINAL_SERVER_CONNECTIONS: '[{"id":"open-terminal","url":"http://open-terminal:8000","key":"${OPEN_TERMINAL_API_KEY}","name":"Open Terminal","auth_type":"bearer","config":{"access_grants":[]}}]'
 
     networks:
-      - frontend
+      - caddy
       - backend
     depends_on:
       postgres:
@@ -121,15 +81,6 @@ services:
         condition: service_healthy
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.openwebui.rule=Host(`${DOMAIN:-localhost}`)"
-      - "traefik.http.routers.openwebui.entrypoints=websecure"
-      - "traefik.http.routers.openwebui.tls=true"
-      - "traefik.http.services.openwebui.loadbalancer.server.port=8080"
-      - "traefik.http.services.openwebui.loadbalancer.server.scheme=http"
-      # WebSocket support - passthrough mode for native WebSocket handling
-      - "traefik.http.routers.openwebui.middlewares=secure-headers@file"
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
       interval: 30s
@@ -214,7 +165,7 @@ services:
     command:
       - "--config=/app/config.yaml"
     networks:
-      - frontend
+      - caddy
       - backend
     depends_on:
       postgres:
@@ -225,12 +176,6 @@ services:
         condition: service_started
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.litellm.rule=Host(`litellm.${DOMAIN:-localhost}`)"
-      - "traefik.http.routers.litellm.entrypoints=websecure"
-      - "traefik.http.routers.litellm.tls=true"
-      - "traefik.http.services.litellm.loadbalancer.server.port=4000"
     healthcheck:
       test: [ "CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/4000 && echo -e 'GET /health/readiness HTTP/1.1\\r\\nHost: localhost\\r\\nAuthorization: Bearer ${LITELLM_MASTER_KEY}\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q 'HTTP/1.1 200'" ]
       interval: 30s
@@ -354,16 +299,10 @@ services:
       GF_AUTH_ANONYMOUS_ENABLED: "false"
       GF_AUTH_DISABLE_LOGIN_FORM: "false"
     networks:
-      - frontend
+      - caddy
       - backend
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.grafana.rule=Host(`grafana.${DOMAIN:-localhost}`)"
-      - "traefik.http.routers.grafana.entrypoints=websecure"
-      - "traefik.http.routers.grafana.tls=true"
-      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
 
   # ===========================================================================
   # Node Exporter - System Metrics
@@ -450,9 +389,8 @@ services:
 # Networks
 # =============================================================================
 networks:
-  frontend:
-    driver: bridge
-    name: ${COMPOSE_PROJECT_NAME:-openwebui-stack}_frontend
+  caddy:
+    external: true
   backend:
     driver: bridge
     internal: true
@@ -472,7 +410,5 @@ volumes:
     name: ${COMPOSE_PROJECT_NAME:-openwebui-stack}_qdrant_data
   lgtm_data:
     name: ${COMPOSE_PROJECT_NAME:-openwebui-stack}_lgtm_data
-  traefik_logs:
-    name: ${COMPOSE_PROJECT_NAME:-openwebui-stack}_traefik_logs
   open-terminal:
     name: ${COMPOSE_PROJECT_NAME:-openwebui-stack}_open-terminal

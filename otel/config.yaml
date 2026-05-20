@@ -24,14 +24,6 @@ receivers:
               labels:
                 job: "nvidia-gpu"
 
-        # Traefik metrics
-        - job_name: "traefik"
-          scrape_interval: 15s
-          static_configs:
-            - targets: ["traefik:8080"]
-              labels:
-                job: "traefik"
-
         # Qdrant metrics
         - job_name: "qdrant"
           scrape_interval: 15s

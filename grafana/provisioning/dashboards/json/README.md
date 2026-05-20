@@ -10,7 +10,6 @@ This directory contains pre-configured Grafana dashboard configurations in JSON 
 - **opentelemetry-dashboard.json** - OpenTelemetry traces and spans visualization
 - **openwebui-dashboard.json** - Open WebUI application metrics and user activity
 - **postgresql-dashboard.json** - PostgreSQL database performance and health metrics
-- **traefik-dashboard.json** - Traefik reverse proxy metrics and routing statistics
 
 ## License Information
 

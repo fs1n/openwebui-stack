@@ -12,7 +12,6 @@ certs/
 *.crt
 *.key
 *.pem
-traefik/dynamic/certs.yml
 
 # Data directories (Docker volumes)
 *_data/

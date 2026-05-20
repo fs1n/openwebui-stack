@@ -22,12 +22,6 @@ sed_inplace() {
     fi
 }
 
-# Helper function to generate htpasswd hash (apr1 format)
-generate_htpasswd() {
-    local password="$1"
-    openssl passwd -apr1 "$password"
-}
-
 # Helper function to generate password
 generate_password() {
     openssl rand -base64 32 | tr -dc 'a-zA-Z0-9' | head -c 32
@@ -99,23 +93,6 @@ if [ "$INIT_ENV" = true ]; then
     echo ""
 fi
 
-# 4. SSL Certificates (optional)
-echo -e "${YELLOW}Step 4: SSL Certificates${NC}"
-echo -e "  Traefik generates a self-signed certificate by default."
-echo -e "  It changes on every restart, requiring you to re-accept it in the browser."
-echo -e "  Generating persistent certificates avoids this."
-GENERATE_CERTS=false
-if [ -f "$PROJECT_ROOT/certs/server.crt" ] && [ -f "$PROJECT_ROOT/certs/server.key" ]; then
-    echo -e "${GREEN}✓ Custom certificates already exist${NC}"
-    if prompt_yes_no_default_no "Regenerate certificates?"; then
-        GENERATE_CERTS=true
-    fi
-else
-    if prompt_yes_no_default_no "Generate persistent self-signed certificates?"; then
-        GENERATE_CERTS=true
-    fi
-fi
-echo ""
 
 # Execute steps
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
@@ -152,8 +129,6 @@ if [ "$GENERATE_PASSWORDS" = true ]; then
     GRAFANA_PASS=$(generate_password)
     QDRANT_KEY=$(generate_password)
     VALKEY_PASS=$(generate_password)
-    TRAEFIK_PASS=$(generate_password)
-
     # Replace all passwords with specific line patterns to avoid substring matches
     sed_inplace "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$POSTGRES_PASS|" "$PROJECT_ROOT/.env"
     sed_inplace "s|^OPENWEBUI_DB_PASSWORD=.*|OPENWEBUI_DB_PASSWORD=$OPENWEBUI_DB_PASS|" "$PROJECT_ROOT/.env"
@@ -164,22 +139,8 @@ if [ "$GENERATE_PASSWORDS" = true ]; then
     sed_inplace "s|^GF_SECURITY_ADMIN_PASSWORD=.*|GF_SECURITY_ADMIN_PASSWORD=$GRAFANA_PASS|" "$PROJECT_ROOT/.env"
     sed_inplace "s|^QDRANT_API_KEY=.*|QDRANT_API_KEY=$QDRANT_KEY|" "$PROJECT_ROOT/.env"
     sed_inplace "s|^VALKEY_PASSWORD=.*|VALKEY_PASSWORD=$VALKEY_PASS|" "$PROJECT_ROOT/.env"
-    sed_inplace "s|^TRAEFIK_DASHBOARD_PASSWORD=.*|TRAEFIK_DASHBOARD_PASSWORD=$TRAEFIK_PASS|" "$PROJECT_ROOT/.env"
-
-    # Generate Traefik dashboard password hash from the plain password we just set
-    TRAEFIK_HASH=$(generate_htpasswd "$TRAEFIK_PASS")
-    # Escape $ signs for Docker Compose variable interpolation (apr1 hashes use $ in format)
-    # Also escape special characters for sed
-    ESCAPED_HASH=$(echo "$TRAEFIK_HASH" | sed 's/\$/$$/g' | sed 's/[\/&]/\\&/g')
-    sed_inplace "s|^TRAEFIK_DASHBOARD_PASSWORD_HASH=.*|TRAEFIK_DASHBOARD_PASSWORD_HASH=$ESCAPED_HASH|" "$PROJECT_ROOT/.env"
 
     echo -e "${GREEN}✓ Generated secure passwords${NC}"
-fi
-
-# Generate SSL certificates
-if [ "$GENERATE_CERTS" = true ]; then
-    export DOMAIN
-    "$SCRIPT_DIR/generate-certs.sh"
 fi
 
 # Make scripts executable
