@@ -408,6 +408,8 @@ volumes:
     name: ${COMPOSE_PROJECT_NAME:-openwebui-stack}_valkey_data
   qdrant_data:
     name: ${COMPOSE_PROJECT_NAME:-openwebui-stack}_qdrant_data
+  ollama_data:
+    name: ${COMPOSE_PROJECT_NAME:-openwebui-stack}_ollama_data
   lgtm_data:
     name: ${COMPOSE_PROJECT_NAME:-openwebui-stack}_lgtm_data
   open-terminal:
