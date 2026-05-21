@@ -119,8 +119,8 @@ services:
     container_name: ${COMPOSE_PROJECT_NAME:-openwebui-stack}_ollama_manager
     environment:
       - OLLAMA_HOST=http://${COMPOSE_PROJECT_NAME:-openwebui-stack}_ollama:11434
-  networks:
-    - backend
+    networks:
+      - backend
 
   # ===========================================================================
   # Ollama - Local LLM Runtime
