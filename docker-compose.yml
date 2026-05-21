@@ -112,16 +112,15 @@ services:
   # ===========================================================================
   # Ollama-Manager
   # ===========================================================================
-  services:
-    ollama-manager:
-      image: ghcr.io/fs1n/ollama-manager:latest
-      ports:
-        - "3000:3000"
-      container_name: ${COMPOSE_PROJECT_NAME:-openwebui-stack}_ollama_manager
-      environment:
-        - OLLAMA_HOST=http://${COMPOSE_PROJECT_NAME:-openwebui-stack}_ollama:11434
-    networks:
-      - backend
+  ollama-manager:
+    image: ghcr.io/fs1n/ollama-manager:latest
+    ports:
+      - "3000:3000"
+    container_name: ${COMPOSE_PROJECT_NAME:-openwebui-stack}_ollama_manager
+    environment:
+      - OLLAMA_HOST=http://${COMPOSE_PROJECT_NAME:-openwebui-stack}_ollama:11434
+  networks:
+    - backend
 
   # ===========================================================================
   # Ollama - Local LLM Runtime
