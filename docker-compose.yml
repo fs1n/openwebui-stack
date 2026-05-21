@@ -110,6 +110,20 @@ services:
         - open-terminal
 
   # ===========================================================================
+  # Ollama-Manager
+  # ===========================================================================
+  services:
+    ollama-manager:
+      image: ghcr.io/fs1n/ollama-manager:latest
+      ports:
+        - "3000:3000"
+      container_name: ${COMPOSE_PROJECT_NAME:-openwebui-stack}_ollama_manager
+      environment:
+        - OLLAMA_HOST=http://${COMPOSE_PROJECT_NAME:-openwebui-stack}_ollama:11434
+    networks:
+      - backend
+
+  # ===========================================================================
   # Ollama - Local LLM Runtime
   # ===========================================================================
   ollama:
@@ -134,6 +148,8 @@ services:
   litellm:
     image: ghcr.io/berriai/litellm:main-latest
     container_name: ${COMPOSE_PROJECT_NAME:-openwebui-stack}_litellm
+    ports:
+      - "4000:4000"
     restart: unless-stopped
     logging: *default-logging
     volumes:
@@ -261,6 +277,13 @@ services:
   qdrant:
     image: qdrant/qdrant:latest
     container_name: ${COMPOSE_PROJECT_NAME:-openwebui-stack}_qdrant
+    ports:
+      - 6333:6333
+      - 6334:6334
+    expose:
+      - 6333
+      - 6334
+      - 6335
     restart: unless-stopped
     logging: *default-logging
     volumes:
