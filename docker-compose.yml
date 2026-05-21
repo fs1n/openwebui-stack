@@ -414,7 +414,7 @@ networks:
     external: true
   backend:
     driver: bridge
-    internal: true
+#    internal: true
     name: ${COMPOSE_PROJECT_NAME:-openwebui-stack}_backend
 
 # =============================================================================
